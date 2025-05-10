@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Recognition</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.6.3/wavesurfer.min.js"></script>
+</head>
+<body class="bg-light">
+    <div class="container mt-5" style="max-width: 600px;">
+        <div class="card shadow">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">Audio Recognition</h2>
+
+                <!-- Recording Controls -->
+                <div class="mb-3">
+                    <button id="recordButton" class="btn btn-danger">Start Recording</button>
+                    <button id="stopButton" class="btn btn-secondary" disabled>Stop Recording</button>
+                    <p id="recordingTime" class="mt-2">00:00</p>
+                </div>
+
+                <!-- Waveform Display -->
+                <div id="waveform" class="mb-3"></div>
+
+                <!-- Playback Controls -->
+                <div class="mb-3">
+                    <button id="playButton" class="btn btn-primary" disabled>Play Audio</button>
+                    <audio id="audioPlayer" class="form-control mt-2" controls style="display:none;"></audio>
+                </div>
+
+                <!-- Save Button -->
+                <button id="saveButton" class="btn btn-info mb-3">Save Audio</button>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audioContext;
+        let mediaStream;
+        let isRecording = false;
+        let audioChunks = [];
+        let wavesurfer = null;
+        let currentAudioBuffer = null;
+        let audioElement = new Audio();
+        let recordingStartTime = null;
+        let recordingInterval = null;
+
+        // Initialize WaveSurfer
+        wavesurfer = WaveSurfer.create({
+            container: '#waveform',
+            waveColor: 'blue',
+            progressColor: 'purple',
+        });
+
+        // Recording Controls
+        const recordButton = document.getElementById('recordButton');
+        const stopButton = document.getElementById('stopButton');
+        const playButton = document.getElementById('playButton');
+        const recordingTime = document.getElementById('recordingTime');
+        const audioPlayer = document.getElementById('audioPlayer');
+
+        recordButton.addEventListener('click', async () => {
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                processor.onaudioprocess = (e) => {
+                    if (!isRecording) return;
+                    const channelData = e.inputBuffer.getChannelData(0);
+                    audioChunks.push(new Float32Array(channelData));
+                };
+
+                isRecording = true;
+                recordingStartTime = Date.now();
+                recordingInterval = setInterval(updateRecordingTime, 1000);
+                recordButton.disabled = true;
+                stopButton.disabled = false;
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+            }
+        });
+
+        function updateRecordingTime() {
+            if (!isRecording) return;
+            const elapsedTime = Math.floor((Date.now() - recordingStartTime) / 1000);
+            const minutes = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
+            const seconds = String(elapsedTime % 60).padStart(2, '0');
+            recordingTime.textContent = `${minutes}:${seconds}`;
+        }
+
+        stopButton.addEventListener('click', () => {
+            isRecording = false;
+            mediaStream.getTracks().forEach(track => track.stop());
+            clearInterval(recordingInterval);
+
+            // Create audio buffer
+            const audioData = new Float32Array(audioChunks.reduce((acc, chunk) => acc + chunk.length, 0));
+            let offset = 0;
+            audioChunks.forEach(chunk => {
+                audioData.set(chunk, offset);
+                offset += chunk.length;
+            });
+
+            currentAudioBuffer = audioContext.createBuffer(1, audioData.length, audioContext.sampleRate);
+            currentAudioBuffer.getChannelData(0).set(audioData);
+            audioChunks = [];
+
+            // Update waveform
+            const wavBlob = audioBufferToWav(currentAudioBuffer);
+            wavesurfer.load(URL.createObjectURL(wavBlob));
+
+            recordButton.disabled = false;
+            stopButton.disabled = true;
+            playButton.disabled = false;  // Enable play button
+        });
+
+        // Play Functionality
+        playButton.addEventListener('click', () => {
+            if (!currentAudioBuffer) return;
+
+            // Convert audio buffer to URL and play
+            const wavBlob = audioBufferToWav(currentAudioBuffer);
+            const url = URL.createObjectURL(wavBlob);
+            audioPlayer.src = url;
+            audioPlayer.style.display = "block"; // Show the audio player controls
+            audioPlayer.play();
+        });
+
+        // Save Functionality
+        document.getElementById('saveButton').addEventListener('click', () => {
+            if (!currentAudioBuffer) return;
+            const wavBlob = audioBufferToWav(currentAudioBuffer);
+            const url = URL.createObjectURL(wavBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'audio.wav';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // File Upload Handler
+        document.querySelector('input[type="file"]').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+                currentAudioBuffer = await audioContext.decodeAudioData(event.target.result);
+                wavesurfer.load(event.target.result);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // Audio Buffer to WAV Converter
+        function audioBufferToWav(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const length = buffer.length;
+            const sampleRate = buffer.sampleRate;
+            const bytesPerSample = 2;
+            const blockAlign = numChannels * bytesPerSample;
+            const bufferSize = length * blockAlign;
+            const arrayBuffer = new ArrayBuffer(44 + bufferSize);
+            const view = new DataView(arrayBuffer);
+
+            // WAV header
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + bufferSize, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt '); 
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * blockAlign, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bytesPerSample * 8, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, bufferSize, true);
+
+            // PCM data
+            const dataView = new DataView(arrayBuffer, 44);
+            let offset = 0;
+            for (let i = 0; i < length; i++) {
+                for (let channel = 0; channel < numChannels; channel++) {
+                    const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]));
+                    const intSample = sample < 0 ? sample * 32768 : sample * 32767;
+                    dataView.setInt16(offset, intSample, true);
+                    offset += 2;
+                }
+            }
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+    </script>
+</body>
+</html>
