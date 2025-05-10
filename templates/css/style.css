@@ -1,0 +1,407 @@
+:root {
+  --primary-color: #2A5C82;
+  --secondary-color: #5BA4E6;
+  --accent-color: #FFA726;
+  --text-color: #333;
+  --background-color: #f8f9fa;
+  --footer-background: #2A5C82;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+
+/* Base Jumbotron Styling */
+.jumbotron {
+  padding: 2rem 1rem;
+  margin-bottom: 2rem;
+  background-color: #e9ecef;
+  border-radius: 0.3rem;
+}
+
+@media (min-width: 576px) {
+  .jumbotron {
+    padding: 4rem 2rem;
+  }
+}
+
+.jumbotron-fluid {
+  padding-right: 0;
+  padding-left: 0;
+  border-radius: 0;
+}
+
+/* Updated Jumbotron Background for Speech Emotion Recognition */
+.jumbotron {
+  /* background: linear-gradient(rgba(0, 123, 255, 0.8), rgba(0, 123, 255, 0.7)),
+              url(../img/speech_hero.jpg) no-repeat center center; */
+              /* background: linear-gradient(rgba(7, 77, 50, 0.9), rgba(7, 77, 50, 0.8)), url(../img/hero2.png), no-repeat center center; */
+              background:   linear-gradient(rgba(240, 244, 248, 0.9), rgba(240, 244, 248, 0.8)), url(../img/hero2.png), no-repeat center center;
+  background-size: cover;
+}
+
+
+.shadow-lg {
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
+}
+
+/* Background image for sections */
+.bg-image {
+  background: linear-gradient(rgba(0, 123, 255, 0.05), rgba(0, 123, 255, 0.05)),
+              url(../img/bg-image.jpg);
+  background-attachment: fixed;
+}
+
+/* About Section & Accordion Styling */
+.about-us {
+  position: relative;
+  padding: 0;
+  margin-top: 130px;
+}
+
+.about-us:before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  z-index: -1;
+  width: 84%;
+  height: 100%;
+  background-color: #f1f0fe;
+  content: '';
+  border-top-left-radius: 500px;
+  border-bottom-left-radius: 500px;
+}
+.btn-icon {
+  width: 77px;
+  height: 77px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 1.5rem !important;
+}
+
+
+.accordion {
+  margin-top: -40px;
+  margin-bottom: -40px;
+  background-color: #2a5c82;
+  border-radius: 40px;
+  padding: 80px 50px 50px 50px;
+}
+
+.accordion-item {
+  background-color: #fff;
+  border-radius: 40px !important;
+  margin-bottom: 30px;
+  border: none;
+}
+
+.accordion-item .accordion-button {
+  outline: none;
+  box-shadow: none;
+  border-radius: 40px !important;
+}
+
+.accordion-button:not(.collapsed) {
+  color: #007bff;
+  background-color: #fff;
+}
+
+h2.accordion-header button {
+  padding: 15px 25px;
+  font-family: 'Poppins';
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.accordion-button::after {
+  font-size: 18px;
+  font-weight: 500;
+  background-image: none;
+  content: '+';
+  width: 30px;
+  height: 30px;
+  display: inline-block;
+  text-align: center;
+  line-height: 30px;
+  border-radius: 50%;
+  background-color: #007bff;
+  color: #fff;
+}
+
+.accordion-button:not(.collapsed)::after {
+  background-image: none;
+  line-height: 32px;
+  content: '-';
+}
+
+.accordion-body {
+  padding: 0px 25px 30px 25px;
+  font-size: 14px;
+  line-height: 28px;
+  color: #4a4a4a;
+}
+
+.about-us .section-heading {
+  margin-left: 60px;
+  margin-bottom: 0;
+}
+
+.about-us .section-heading .main-button {
+  margin-top: 50px;
+}
+
+.table-background{
+  background-color: #2a5c82;
+  --bs-table-color: #fff;
+  --bs-table-bg: #2a5c82;
+  --bs-table-border-color: #373b3e;
+  --bs-table-striped-bg: #2a5c82;
+  --bs-table-striped-color: #fff;
+  --bs-table-active-bg: #2a5c82;
+  --bs-table-active-color: #fff;
+  --bs-table-hover-bg: #2a5c82;
+  --bs-table-hover-color: #fff;
+  color: var(--bs-table-color);
+  border-color:  #2a5c82;
+}
+.input-group .form-control {
+  border-right: none;
+}
+.input-group .btn {
+  border-left: none;
+}
+.table th, .table td {
+  vertical-align: middle;
+}
+.table-hover tbody tr:hover {
+  background-color: #f0f0f0;
+}
+
+/* Header Styles */
+.navbar {
+  background-color: var(--primary-color) !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+  color: white !important;
+  font-weight: bold;
+  font-size: 1.5rem;
+  padding: 0;
+
+  letter-spacing: 1px;
+}
+.navbar-brand img {
+  height: 60px;
+
+}
+
+.navbar  .nav-link {
+  color: rgba(255,255,255,0.8) !important;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+}
+
+.navbar .nav-link.active {
+  color: white !important;
+  transform: translateY(-1px);
+}
+
+
+.navbar .nav-link:hover {
+  color: white !important;
+  transform: translateY(-3px);
+}
+
+
+
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(rgba(42,92,130,0.9), rgba(42,92,130,0.8)),
+              url('../img/nurse-talking-to-disabled-and-happy-senior-scaled.jpg') center/cover;
+  height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+.hero-content {
+  max-width: 800px;
+  text-align: center;
+}
+
+.hero-content h1 {
+  font-size: 3rem;
+}
+
+.hero-content p {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+
+/* Services Section */
+.services-section {
+  padding: 5rem 0;
+  background-color: #fff;
+}
+
+.service-card {
+  transition: transform 0.3s ease;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  padding: 2rem;
+  margin: 1rem;
+  text-align: center;
+}
+
+.service-card:hover {
+  transform: translateY(-10px);
+}
+
+.service-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+}
+
+.service-card h3 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.service-card p {
+  font-size: 1.1rem;
+}
+
+/* Features Section */
+.features-section {
+  background-color: #fff;
+  padding: 5rem 0;
+}
+
+.feature-box {
+  padding: 2rem;
+  text-align: center;
+}
+
+.feature-number {
+  font-size: 2.5rem;
+  color: var(--accent-color);
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+/* Testimonials Section */
+.testimonial-card {
+  background-color: #fff;
+  border-radius: 15px;
+  padding: 2rem;
+  margin: 1rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.testimonial-text {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+/* Call to Action */
+.cta-section {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 4rem 0;
+  text-align: center;
+}
+
+.cta-section h2 {
+  font-size: 2.5rem;
+  font-weight: bold;
+}
+
+.btn-custom {
+  background-color: var(--accent-color);
+  color: white;
+  padding: 12px 30px;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.btn-custom:hover {
+  background-color: #FF9800;
+  transform: scale(1.05);
+}
+
+/* Footer */
+.footer {
+  background-color: var(--footer-background);
+  color: white;
+  padding: 40px 0;
+}
+
+.footer-links a {
+  color: rgba(255,255,255,0.8);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: white;
+}
+
+/* Accessibility Enhancements */
+a:focus, .btn:focus {
+  outline: 2px solid var(--secondary-color);
+}
+
+/* About Us Section */
+.about-us {
+  padding: 6rem 0;
+  background-color: #f0f4f8;
+}
+
+.accordion-button {
+  background-color: var(--secondary-color);
+  color: white;
+  font-weight: 500;
+}
+
+.accordion-button:hover {
+  background-color: var(--accent-color);
+}
+
+.accordion-item {
+  margin-bottom: 1rem;
+}
+
+.section-heading h2 {
+  font-size: 2.2rem;
+  font-weight: bold;
+}
+
+.section-heading p {
+  font-size: 1.1rem;
+  color: #555;
+}
+
+.form-background{
+  background-color: #f0f4f8;
+
+}
+
+.contact .btn{ 
+  background-color: #f0f4f8;
+
+}

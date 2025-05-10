@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emotion Recognition</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.6.3/wavesurfer.min.js"></script>
+  <style>
+    /* Add any extra styling here */
+  </style>
+</head>
+<body class="bg-light">
+  <div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow">
+      <div class="card-body">
+        <h2 class="card-title text-center mb-4">Audio Emotion Recognition</h2>
+
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <a
+              class="nav-link active"
+              id="upload-tab"
+              data-bs-toggle="tab"
+              href="#upload"
+              role="tab"
+              aria-controls="upload"
+              aria-selected="true"
+              >Upload File</a
+            >
+          </li>
+          <li class="nav-item" role="presentation">
+            <a
+              class="nav-link"
+              id="record-tab"
+              data-bs-toggle="tab"
+              href="#record"
+              role="tab"
+              aria-controls="record"
+              aria-selected="false"
+              >Record Audio</a
+            >
+          </li>
+        </ul>
+
+        <div class="tab-content mt-3" id="myTabContent">
+          <!-- File Upload Tab -->
+          <div class="tab-pane fade show active" id="upload" role="tabpanel" aria-labelledby="upload-tab">
+            <form method="post" enctype="multipart/form-data">
+              <div class="mb-3">
+                <input type="file" class="form-control" name="file" accept=".wav" />
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Analyze Emotion</button>
+            </form>
+          </div>
+
+          <!-- Record Audio Tab -->
+          <div class="tab-pane fade" id="record" role="tabpanel" aria-labelledby="record-tab">
+            <div class="mb-3">
+              <button id="recordButton" class="btn btn-danger">Start Recording</button>
+              <button id="stopButton" class="btn btn-secondary" disabled>Stop Recording</button>
+              <p id="recordingTime" class="mt-2">00:00</p>
+            </div>
+
+            <div id="waveform" class="mb-3"></div>
+
+            <div class="mb-3">
+              <button id="playButton" class="btn btn-primary" disabled>Play Audio</button>
+              <audio id="audioPlayer" class="form-control mt-2" controls style="display:none;"></audio>
+            </div>
+
+            <button id="saveButton" class="btn btn-info mb-3" disabled>Save Audio</button>
+            <button id="analyzeRecordingButton" class="btn btn-success mb-3" disabled>Analyze Recording</button>
+          </div>
+        </div>
+
+        <!-- Result display container; this content is rendered only after a result is returned -->
+        <div id="resultDisplay">
+          {% if result %}
+          <div class="mt-4 text-center">
+            <h3>Result:</h3>
+            <!-- The id "emotionResult" allows JS to extract the displayed emotion -->
+            <div id="emotionResult" class="display-4">{{ result }}</div>
+            <small class="text-muted">File: {{ filename }}</small>
+            <br />
+            <button class="btn btn-info mt-3" onclick="showAdviceFromServer()">View Advice</button>
+          </div>
+          {% endif %}
+
+          {% if error %}
+          <div class="alert alert-danger">{{ error }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Showing Emotion Advice -->
+  <div class="modal fade" id="adviceModal" tabindex="-1" aria-labelledby="adviceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="adviceModalLabel">Emotion Insights</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="adviceContent">
+          <!-- Advice text will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Bootstrap JS and Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+
+  <script>
+    // =======================
+    // EMOTION ADVICE STORAGE
+    // =======================
+    const emotionAdvice = {
+      neutral: `
+        <h4>😐 Neutral</h4>
+        <hr>
+        <strong>Information & Insights:</strong>
+        <ul>
+          <li><strong>Self-Awareness:</strong> Being neutral can be a sign of emotional stability. It might also be a quiet moment before other feelings emerge.</li>
+          <li><strong>Reflection:</strong> Sometimes, prolonged neutrality may hide underlying emotions that haven't surfaced.</li>
+        </ul>
+        <strong>Advice & Feedback:</strong>
+        <ul>
+          <li><strong>Mindfulness:</strong> Take time to observe your thoughts. Journaling can help uncover any subtle feelings.</li>
+          <li><strong>Engagement:</strong> Try engaging in a new activity to gently shift your mood.</li>
+          <li><strong>Balance:</strong> Use this state to prepare mentally for more intense emotions if they arise.</li>
+        </ul>
+      `,
+      calm: `
+        <h4>😌 Calm</h4>
+        <hr>
+        <strong>Information & Insights:</strong>
+        <ul>
+          <li><strong>Mental Clarity:</strong> Calmness allows you to think clearly and respond without impulsivity.</li>
+          <li><strong>Stress Reduction:</strong> This state helps reduce stress and anxiety.</li>
+        </ul>
+        <strong>Advice & Feedback:</strong>
+        <ul>
+          <li><strong>Breathing Techniques:</strong> Practice deep breathing or meditation.</li>
+          <li><strong>Routine:</strong> Establish a calming routine to maintain this state.</li>
+          <li><strong>Environment:</strong> Create a soothing space to reinforce your calm mindset.</li>
+        </ul>
+      `,
+      happy: `
+        <h4>😊 Happy</h4>
+        <hr>
+        <strong>Information & Insights:</strong>
+        <ul>
+          <li><strong>Positive Impact:</strong> Happiness boosts creativity and improves social interactions.</li>
+          <li><strong>Social Connection:</strong> Often arising from meaningful relationships or achievements.</li>
+        </ul>
+        <strong>Advice & Feedback:</strong>
+        <ul>
+          <li><strong>Gratitude Practices:</strong> Keep a journal to remember joyful moments.</li>
+          <li><strong>Share the Joy:</strong> Spread happiness by sharing positive experiences.</li>
+          <li><strong>Mindful Moments:</strong> Savor your moments of happiness by staying present.</li>
+        </ul>
+      `,
+      sad: `
+        <h4>😢 Sad</h4>
+        <hr>
+        <strong>Information & Insights:</strong>
+        <ul>
+          <li><strong>Processing Pain:</strong> Sadness is part of processing emotional pain and healing.</li>
+          <li><strong>Temporary Nature:</strong> It is often temporary and a part of a natural cycle.</li>
+        </ul>
+        <strong>Advice & Feedback:</strong>
+        <ul>
+          <li><strong>Allow Yourself to Feel:</strong> Give yourself time to process your emotions.</li>
+          <li><strong>Seek Support:</strong> Connect with someone if sadness feels overwhelming.</li>
+          <li><strong>Self-Care:</strong> Engage in relaxing activities such as creative arts or gentle exercise.</li>
+        </ul>
+      `,
+      angry: `
+        <h4>😠 Angry</h4>
+        <hr>
+        <strong>Information & Insights:</strong>
+        <ul>
+          <li><strong>Energy for Change:</strong> Anger can motivate you to address problems and set boundaries.</li>
+          <li><strong>Warning Sign:</strong> It might indicate compromised values or violated boundaries.</li>
+        </ul>
+        <strong>Advice & Feedback:</strong>
+        <ul>
+          <li><strong>Pause and Breathe:</strong> Take a moment to regain perspective.</li>
+          <li><strong>Constructive Outlet:</strong> Engage in physical activity to release tension.</li>
+          <li><strong>Communicate Clearly:</strong> Express your feelings calmly to avoid misunderstandings.</li>
+        </ul>
+      `,
+      fear: `
+        <h4>😨 Fear</h4>
+        <hr>
+        <strong>Information & Insights:</strong>
+        <ul>
+          <li><strong>Alert System:</strong> Fear prepares your body to respond to danger.</li>
+          <li><strong>Anxiety Connection:</strong> Persistent fear can contribute to anxiety.</li>
+        </ul>
+        <strong>Advice & Feedback:</strong>
+        <ul>
+          <li><strong>Identify Triggers:</strong> Recognize what causes your fear.</li>
+          <li><strong>Gradual Exposure:</strong> Consider slowly facing your fears.</li>
+          <li><strong>Professional Support:</strong> Seek help if fear disrupts your life.</li>
+        </ul>
+      `,
+      disgust: `
+        <h4>🤢 Disgust</h4>
+        <hr>
+        <strong>Information & Insights:</strong>
+        <ul>
+          <li><strong>Protective Function:</strong> Disgust can steer you away from potential hazards.</li>
+          <li><strong>Emotional Clarity:</strong> It may prompt a reassessment of your environment or values.</li>
+        </ul>
+        <strong>Advice & Feedback:</strong>
+        <ul>
+          <li><strong>Reflect on the Source:</strong> Consider what is triggering your disgust.</li>
+          <li><strong>Healthy Boundaries:</strong> Use it as a guide to maintain personal boundaries.</li>
+          <li><strong>Discuss Feelings:</strong> Talk with someone you trust about your feelings.</li>
+        </ul>
+      `,
+      surprise: `
+        <h4>😲 Surprise</h4>
+        <hr>
+        <strong>Information & Insights:</strong>
+        <ul>
+          <li><strong>Rapid Response:</strong> Surprise helps you quickly process new information.</li>
+          <li><strong>Flexibility:</strong> It may lead to adaptation as you re-evaluate your expectations.</li>
+        </ul>
+        <strong>Advice & Feedback:</strong>
+        <ul>
+          <li><strong>Stay Open-Minded:</strong> Keep curiosity alive when surprised.</li>
+          <li><strong>Reflect Afterwards:</strong> Analyze the experience for personal growth.</li>
+          <li><strong>Balanced Reaction:</strong> Recognize that surprises are usually temporary.</li>
+        </ul>
+      `
+    };
+
+    // =======================
+    // WAVESURFER & RECORDING
+    // =======================
+    const wavesurfer = WaveSurfer.create({
+      container: '#waveform',
+      waveColor: 'blue',
+      progressColor: 'purple'
+    });
+
+    // Grab result display container
+    const resultDisplay = document.getElementById('resultDisplay');
+
+    // Clear result display (and hide any open advice modal) when switching tabs.
+    document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tab => {
+      tab.addEventListener('shown.bs.tab', () => {
+        resultDisplay.innerHTML = '';
+        // If the advice modal is open, hide it.
+        const adviceModalEl = document.getElementById('adviceModal');
+        const modalInstance = bootstrap.Modal.getInstance(adviceModalEl);
+        if (modalInstance) {
+          modalInstance.hide();
+        }
+      });
+    });
+
+    // =======================
+    // RECORDING via AudioContext
+    // =======================
+    let audioContext;
+    let mediaStream;
+    let isRecording = false;
+    let audioChunks = [];
+    let currentAudioBuffer = null;
+    let recordingStartTime = null;
+    let recordingInterval = null;
+
+    // UI Elements for recording
+    const recordButton = document.getElementById('recordButton');
+    const stopButton = document.getElementById('stopButton');
+    const playButton = document.getElementById('playButton');
+    const saveButton = document.getElementById('saveButton');
+    const analyzeRecordingButton = document.getElementById('analyzeRecordingButton');
+    const recordingTime = document.getElementById('recordingTime');
+    const audioPlayer = document.getElementById('audioPlayer');
+
+    // Start recording
+    recordButton.addEventListener('click', async () => {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioContext.createMediaStreamSource(mediaStream);
+        const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+        audioChunks = [];
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+
+        processor.onaudioprocess = (e) => {
+          if (!isRecording) return;
+          const channelData = e.inputBuffer.getChannelData(0);
+          audioChunks.push(new Float32Array(channelData));
+        };
+
+        isRecording = true;
+        recordingStartTime = Date.now();
+        recordingInterval = setInterval(updateRecordingTime, 1000);
+        recordButton.disabled = true;
+        stopButton.disabled = false;
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+      }
+    });
+
+    // Update timer
+    function updateRecordingTime() {
+      if (!isRecording) return;
+      const elapsedTime = Math.floor((Date.now() - recordingStartTime) / 1000);
+      const minutes = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
+      const seconds = String(elapsedTime % 60).padStart(2, '0');
+      recordingTime.textContent = `${minutes}:${seconds}`;
+    }
+
+    // Stop recording and process audio
+    stopButton.addEventListener('click', () => {
+      isRecording = false;
+      mediaStream.getTracks().forEach(track => track.stop());
+      clearInterval(recordingInterval);
+
+      const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const audioData = new Float32Array(totalLength);
+      let offset = 0;
+      audioChunks.forEach(chunk => {
+        audioData.set(chunk, offset);
+        offset += chunk.length;
+      });
+
+      currentAudioBuffer = audioContext.createBuffer(1, audioData.length, audioContext.sampleRate);
+      currentAudioBuffer.getChannelData(0).set(audioData);
+      audioChunks = [];
+
+      const wavBlob = audioBufferToWav(currentAudioBuffer);
+      wavesurfer.load(URL.createObjectURL(wavBlob));
+
+      recordButton.disabled = false;
+      stopButton.disabled = true;
+      playButton.disabled = false;
+      saveButton.disabled = false;
+      analyzeRecordingButton.disabled = false;
+    });
+
+    // Playback
+    playButton.addEventListener('click', () => {
+      if (!currentAudioBuffer) return;
+      const wavBlob = audioBufferToWav(currentAudioBuffer);
+      const url = URL.createObjectURL(wavBlob);
+      audioPlayer.src = url;
+      audioPlayer.style.display = 'block';
+      audioPlayer.play();
+    });
+
+    // Save recording
+    saveButton.addEventListener('click', () => {
+      if (!currentAudioBuffer) return;
+      const wavBlob = audioBufferToWav(currentAudioBuffer);
+      const url = URL.createObjectURL(wavBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'audio.wav';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // Analyze recording and show result (including the View Advice button)
+    analyzeRecordingButton.addEventListener('click', () => {
+      if (!currentAudioBuffer) return;
+      const wavBlob = audioBufferToWav(currentAudioBuffer);
+      const formData = new FormData();
+      formData.append('file', wavBlob, 'audio.wav');
+
+      fetch('/upload-recording', {
+        method: 'POST',
+        body: formData
+      })
+        .then(response => response.json())
+        .then(data => {
+          resultDisplay.innerHTML = `<div class="mt-4 text-center">
+            <h3>Result:</h3>
+            <div id="emotionResult" class="display-4">${data.emotion}</div>
+            <small class="text-muted">File: Recorded Audio</small>
+            <br />
+            <button class="btn btn-info mt-3" onclick="showAdviceFromServer()">View Advice</button>
+          </div>`;
+        })
+        .catch(error => {
+          console.error('Error analyzing recording:', error);
+          resultDisplay.innerHTML = `<div class="alert alert-danger">Error analyzing recording. Please try again.</div>`;
+        });
+    });
+
+    // Convert AudioBuffer to WAV Blob
+    function audioBufferToWav(buffer) {
+      const numChannels = buffer.numberOfChannels;
+      const sampleRate = buffer.sampleRate;
+      const format = 1; // PCM
+      const bytesPerSample = 2;
+      const blockAlign = numChannels * bytesPerSample;
+      const length = buffer.length * blockAlign;
+      const bufferSize = 44 + length;
+      const arrayBuffer = new ArrayBuffer(bufferSize);
+      const view = new DataView(arrayBuffer);
+
+      // Write WAV header
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, 36 + length, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, format, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, bytesPerSample * 8, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, length, true);
+
+      // Write PCM samples
+      let offset = 44;
+      for (let i = 0; i < buffer.length; i++) {
+        for (let channel = 0; channel < numChannels; channel++) {
+          let sample = buffer.getChannelData(channel)[i];
+          sample = Math.max(-1, Math.min(1, sample));
+          view.setInt16(offset, sample < 0 ? sample * 32768 : sample * 32767, true);
+          offset += 2;
+        }
+      }
+      return new Blob([view], { type: 'audio/wav' });
+    }
+
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+    // =======================
+    // SHOW ADVICE / MODAL
+    // =======================
+    function showAdviceFromServer() {
+      const emotionResultElem = document.getElementById('emotionResult');
+      if (!emotionResultElem) return;
+
+      // Extract emotion from result (e.g., "happy 😊" becomes "happy")
+      const displayed = emotionResultElem.textContent.trim().toLowerCase();
+      const primaryEmotion = displayed.split(' ')[0];
+
+      showEmotionAdvice(primaryEmotion);
+    }
+
+    // Fill modal content and display it
+    function showEmotionAdvice(emotionKey) {
+      const adviceText = emotionAdvice[emotionKey] || `<p>Sorry, no advice available for: ${emotionKey}</p>`;
+      document.getElementById('adviceContent').innerHTML = adviceText;
+
+      const adviceModal = new bootstrap.Modal(document.getElementById('adviceModal'));
+      adviceModal.show();
+    }
+  </script>
+</body>
+</html>
